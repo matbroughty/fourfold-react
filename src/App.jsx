@@ -1,12 +1,14 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import Papa from 'papaparse'
 import DataTable from './components_DataTable.jsx'
+import MobileDataTable from './components_MobileDataTable.jsx'
 import LineChart from './components_LineChart.jsx'
 import CsvEditor from './components_CsvEditor.jsx'
 import CsvLoader from './components_CsvLoader.jsx'
 import MultiUserLineChart from './components_MultiUserLineChart.jsx'
 import UserWinningsBarChart from './components_UserWinningsBarChart.jsx'
 import Dashboard from './components_Dashboard.jsx'
+import { useMediaQuery } from './hooks/useMediaQuery.js'
 
 const DEFAULT_REMOTE_URL = import.meta.env.VITE_CSV_URL || ''
 
@@ -84,6 +86,7 @@ export default function App() {
   const [showEditor, setShowEditor] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
   const [showDashboard, setShowDashboard] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 639px)')
 
   const handleFile = (file) => {
     if (!file) return
@@ -289,13 +292,21 @@ export default function App() {
             </div>
           </div>
 
-          <DataTable
-            rows={sortedTotals}
-            columns={columnsTotals}
-            sortBy={sortBy}
-            sortDir={sortDir}
-            onSortChange={(col, dir) => { setSortBy(col); setSortDir(dir); }}
-          />
+          {isMobile ? (
+            <MobileDataTable
+              rows={sortedTotals}
+              columns={columnsTotals}
+              mode="totals"
+            />
+          ) : (
+            <DataTable
+              rows={sortedTotals}
+              columns={columnsTotals}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSortChange={(col, dir) => { setSortBy(col); setSortDir(dir); }}
+            />
+          )}
         </div>
 
         {rawRows.length > 0 && (
@@ -306,13 +317,22 @@ export default function App() {
                 <div className="subtle">As uploaded / fetched</div>
               </div>
             </div>
-            <DataTable
-              rows={sortedRaw}
-              columns={rawColumns}
-              sortBy={setRawSortBy ? rawSortBy : '__label'}
-              sortDir={rawSortDir}
-              onSortChange={(col, dir) => { setRawSortBy(col); setRawSortDir(dir); }}
-            />
+            {isMobile ? (
+              <MobileDataTable
+                rows={sortedRaw}
+                columns={rawColumns}
+                mode="gameweeks"
+                people={people}
+              />
+            ) : (
+              <DataTable
+                rows={sortedRaw}
+                columns={rawColumns}
+                sortBy={setRawSortBy ? rawSortBy : '__label'}
+                sortDir={rawSortDir}
+                onSortChange={(col, dir) => { setRawSortBy(col); setRawSortDir(dir); }}
+              />
+            )}
           </div>
         )}
       </div>

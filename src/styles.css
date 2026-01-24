@@ -31,3 +31,46 @@ kbd { background: #0f1828; border: 1px solid var(--border); border-bottom-width:
 hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .chart-container { height: 300px; margin-bottom: 20px; }
 .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 20px; margin-top: 20px; }
+.grid { display: flex; flex-direction: column; gap: 20px; }
+
+/* Mobile data cards */
+.mobile-cards { display: flex; flex-direction: column; gap: 12px; }
+.mobile-card { background: #0f1828; border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 48px; }
+.mobile-card-header { display: flex; align-items: center; gap: 12px; }
+.mobile-card-rank { font-size: 1.25rem; min-width: 32px; }
+.mobile-rank-number { color: var(--muted); font-size: 0.875rem; }
+.mobile-card-name { font-weight: 500; flex: 1; }
+.mobile-card-value { font-size: 1.25rem; font-weight: 600; color: var(--accent); text-align: right; margin-top: 8px; }
+.mobile-card-expandable { cursor: pointer; }
+.mobile-card-toggle { justify-content: space-between; }
+.mobile-card-chevron { color: var(--muted); font-size: 0.75rem; }
+.mobile-card-content { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.mobile-card-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+.mobile-card-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+.mobile-card-row-label { color: var(--muted); }
+.mobile-card-row-value { font-weight: 500; color: var(--accent); }
+
+/* Visibility utilities */
+.desktop-only { display: block; }
+.mobile-only { display: none; }
+
+/* Mobile responsive styles */
+@media (max-width: 639px) {
+  .container { margin: 16px auto; padding: 0 12px; }
+  .header { flex-direction: column; align-items: stretch; gap: 16px; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.125rem; }
+  .controls { flex-direction: column; }
+  .button, .file-label { width: 100%; min-height: 48px; justify-content: center; }
+  .badge { width: 100%; justify-content: center; font-size: 0.75rem; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .chart-container { height: 250px; }
+  .card { padding: 12px; border-radius: 12px; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+  .subtle { font-size: 0.75rem; }
+}
+
+@media (min-width: 640px) {
+  .mobile-only { display: none !important; }
+}

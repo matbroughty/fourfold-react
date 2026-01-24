@@ -2,8 +2,10 @@ import React from 'react';
 import LineChart from './components_LineChart.jsx';
 import MultiUserLineChart from './components_MultiUserLineChart.jsx';
 import UserWinningsBarChart from './components_UserWinningsBarChart.jsx';
+import { useMediaQuery } from './hooks/useMediaQuery.js';
 
 export default function Dashboard({ rawRowsNormalized, people, onBack }) {
+  const isMobile = useMediaQuery('(max-width: 639px)');
   return (
     <div className="container">
       <div className="header">
