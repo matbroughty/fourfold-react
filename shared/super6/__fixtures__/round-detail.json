@@ -1,0 +1,196 @@
+{
+  "id": 1,
+  "isSingleWinner": false,
+  "status": "open",
+  "isPaused": false,
+  "startDateTime": "2026-07-17T11:17:00Z",
+  "endDateTime": "2026-08-22T14:00:00Z",
+  "season": "2026-27",
+  "scoreChallenges": [
+    {
+      "id": 1,
+      "void": false,
+      "match": {
+        "id": 89447,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-22T14:00:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 156,
+          "score": 0,
+          "name": "Everton",
+          "shortname": "EVT",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/EVT.png"
+        },
+        "awayTeam": {
+          "id": 178,
+          "score": 0,
+          "name": "Crystal Palace",
+          "shortname": "PAL",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/PAL.png"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "void": false,
+      "match": {
+        "id": 89451,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-22T14:00:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 183,
+          "score": 0,
+          "name": "Nottm Forest",
+          "shortname": "NOT",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/NOT.png"
+        },
+        "awayTeam": {
+          "id": 192,
+          "score": 0,
+          "name": "Leeds",
+          "shortname": "LEE",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/LEE.png"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "void": false,
+      "match": {
+        "id": 89448,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-22T16:30:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 202,
+          "score": 0,
+          "name": "Brentford",
+          "shortname": "BRN",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/BRN.png"
+        },
+        "awayTeam": {
+          "id": 160,
+          "score": 0,
+          "name": "Spurs",
+          "shortname": "TOT",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/TOT.png"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "void": false,
+      "match": {
+        "id": 89482,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-23T13:00:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 158,
+          "score": 0,
+          "name": "Man City",
+          "shortname": "MNC",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/MNC.png"
+        },
+        "awayTeam": {
+          "id": 189,
+          "score": 0,
+          "name": "Bournemouth",
+          "shortname": "BOR",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/BOR.png"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "void": false,
+      "match": {
+        "id": 89483,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-23T13:00:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 243,
+          "score": 0,
+          "name": "Brighton",
+          "shortname": "BHA",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/BHA.png"
+        },
+        "awayTeam": {
+          "id": 154,
+          "score": 0,
+          "name": "Aston Villa",
+          "shortname": "AST",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/AST.png"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "void": false,
+      "match": {
+        "id": 89481,
+        "eventId": null,
+        "kickOffDateTime": "2026-08-23T15:30:00.000Z",
+        "shortStatus": "",
+        "status": "Pre Live",
+        "isLocked": false,
+        "competitionId": 1541,
+        "competitionName": "Premier League",
+        "competitionImageUrl": null,
+        "homeTeam": {
+          "id": 162,
+          "score": 0,
+          "name": "Newcastle",
+          "shortname": "NEW",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/NEW.png"
+        },
+        "awayTeam": {
+          "id": 157,
+          "score": 0,
+          "name": "Liverpool",
+          "shortname": "LIV",
+          "badgeUri": "https://s3-eu-west-1.amazonaws.com/s6-prod-s3-content/team_logos/LIV.png"
+        }
+      }
+    }
+  ],
+  "goldenGoalChallenge": {
+    "isGoldenGoalScored": false,
+    "id": 7,
+    "time": null,
+    "scorerName": null,
+    "matchId": null,
+    "teamId": null,
+    "teamName": null,
+    "teamShortname": null,
+    "badgeUri": null
+  }
+}

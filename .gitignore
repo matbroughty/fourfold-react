@@ -7,3 +7,6 @@ dist
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# npm cache used by the Amplify build
+.npm
