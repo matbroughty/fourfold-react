@@ -300,19 +300,39 @@ run overwrites rather than duplicates.
 3. **Nothing to configure for the API URL.** The backend build writes
    `custom.apiBaseUrl` into `amplify_outputs.json` and the frontend reads it from
    there. Set `VITE_API_BASE_URL` only if you need to point the SPA somewhere else.
-4. **Add the SPA rewrite** in Amplify → Rewrites and redirects, so client-side
-   routes like `/admin` work on refresh:
+4. **Add the SPA rewrite**, or client-side routes like `/admin` 404 on refresh.
+   This is already applied to the `fourfold-react` app; a new app needs it.
 
    | Source | Target | Type |
    | --- | --- | --- |
-   | `/<*>` | `/index.html` | 200 (Rewrite) |
+   | `</^[^.]+$\|\.(?!(css\|gif\|ico\|jpg\|jpeg\|js\|png\|txt\|svg\|webp\|woff\|woff2\|ttf\|map\|json\|xml)$)([^.]+$)/>` | `/index.html` | 200 (Rewrite) |
 
-5. **Import the history** with `migrate:history -- --write`.
+   Amplify's default `/<*>` → `/index.html` with type **404-200 does not work
+   here**: a request for `/admin` is first 301'd to `/admin/` by Amplify's
+   directory handling, and the rewrite then returns index.html with a 404 status.
+   The regex above matches extensionless paths directly, so there is no redirect,
+   while the negative lookahead keeps real assets (`.js`, `.css`, `.ico`) being
+   served as themselves rather than rewritten to HTML.
+
+   Applying it by CLI:
+   ```bash
+   aws amplify update-app --app-id <APP_ID> --region eu-west-2 \
+     --custom-rules file://rules.json
+   ```
+   It takes effect within a minute or so; no rebuild needed.
+
+5. **Import the history** with `migrate:history -- --write`, using the table name
+   for that Amplify environment. Each branch gets its own table, so a new branch
+   starts empty:
+   ```bash
+   aws dynamodb list-tables --region eu-west-2 | grep -i fourfold
+   ```
 6. **Sync**, either by waiting for the schedule or pressing Sync Super 6.
 
 ### Ongoing
 
-Push to `main`. Amplify builds the frontend and deploys the backend.
+Push to `main`. Amplify runs the tests, deploys the backend, then the frontend —
+so a failing test blocks the deploy rather than shipping a broken site.
 
 ### Staging vs production
 
