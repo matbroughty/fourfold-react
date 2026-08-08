@@ -9,16 +9,20 @@ import { useApi } from '../useApi'
 import { api } from '../api'
 
 function SummaryStrip({
-  rounds,
+  playedRounds,
+  announcedRounds,
   totalReturnPence,
   profitPence,
   winningEntries,
 }: {
-  rounds: number
+  playedRounds: number
+  announcedRounds: number
   totalReturnPence: number
   profitPence: number
   winningEntries: number
 }) {
+  const upcoming = announcedRounds - playedRounds
+
   return (
     <div className="summary-strip">
       <div>
@@ -26,8 +30,13 @@ function SummaryStrip({
         <div className="summary-value">{formatPenceWithSeparators(totalReturnPence)}</div>
       </div>
       <div>
-        <div className="summary-label">Rounds</div>
-        <div className="summary-value">{rounds}</div>
+        <div className="summary-label">Rounds played</div>
+        <div className="summary-value">{playedRounds}</div>
+        {upcoming > 0 && (
+          <div className="subtle">
+            {upcoming} still to come
+          </div>
+        )}
       </div>
       <div>
         <div className="summary-label">Winning entries</div>
@@ -81,7 +90,8 @@ export default function Home() {
           </div>
         </div>
         <SummaryStrip
-          rounds={data.summary.roundCount}
+          playedRounds={data.summary.playedRoundCount}
+          announcedRounds={data.summary.roundCount}
           totalReturnPence={data.summary.totalReturnPence}
           profitPence={data.summary.profitPence}
           winningEntries={data.summary.winningEntries}

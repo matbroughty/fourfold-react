@@ -14,7 +14,34 @@ import type {
   SyncState,
 } from '../shared/domain/types'
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+/**
+ * Where the API lives.
+ *
+ * Resolved at build time, in order:
+ *
+ *  1. `VITE_API_BASE_URL`, if set — an explicit override always wins.
+ *  2. `amplify_outputs.json`, which Amplify's backend phase writes (including
+ *     our `custom.apiBaseUrl`) *before* the frontend build runs. This is why no
+ *     environment variable needs setting by hand: the Function URL is not known
+ *     until the backend deploys, and this closes that loop automatically.
+ *  3. Empty — meaning same-origin `/api`, which is what the Vite dev proxy serves.
+ *
+ * `import.meta.glob` is used rather than a plain import because
+ * `amplify_outputs.json` is gitignored and absent locally; a static import would
+ * fail the build. With no match, glob returns `{}`.
+ */
+const amplifyOutputs = Object.values(
+  import.meta.glob<{ custom?: { apiBaseUrl?: string } }>('../amplify_outputs.json', {
+    eager: true,
+  }),
+)[0]
+
+const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ??
+  amplifyOutputs?.custom?.apiBaseUrl ??
+  ''
+).replace(/\/$/, '')
+
 const TOKEN_KEY = 'fourfold.admin.token'
 
 export interface RoundView extends Round {

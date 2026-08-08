@@ -70,7 +70,7 @@ function SeasonDetail({ seasonId }: { seasonId: string }) {
           <div>
             <h2>{data.season.name}</h2>
             <div className="subtle">
-              {data.summary.roundCount} rounds ·{' '}
+              {data.summary.playedRoundCount} rounds played ·{' '}
               {formatPenceWithSeparators(data.summary.totalReturnPence)} returned ·{' '}
               {data.summary.winningEntries} winning entries
             </div>

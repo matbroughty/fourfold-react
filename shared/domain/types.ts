@@ -177,7 +177,10 @@ export interface StandingRow {
 export interface SeasonSummary {
   seasonId: string
   seasonName: string
+  /** Every round we know about, including ones Super 6 has only announced. */
   roundCount: number
+  /** Rounds that have actually been played, and so been staked on. */
+  playedRoundCount: number
   totalReturnPence: number
   totalStakePence: number
   profitPence: number

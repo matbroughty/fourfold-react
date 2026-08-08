@@ -17,13 +17,33 @@ import type {
   StandingRow,
 } from './types'
 
+/**
+ * Whether a round has actually been played, and therefore staked on.
+ *
+ * A round that Super 6 has published but nobody has played yet must NOT be
+ * charged at £5: at the start of a season Sky already advertises the next few
+ * rounds, and counting those would show everyone £15 down before a ball is
+ * kicked.
+ *
+ * `future` and `open` mean "not started" — `open` is Sky's "taking entries",
+ * which is still before kick-off. Anything else counts, including `unknown`:
+ * if Sky invents a new status, over-counting a played round is a far smaller
+ * error than silently wiping everyone's stake.
+ */
+export function hasRoundStarted(round: Pick<Round, 'status'>): boolean {
+  return round.status !== 'future' && round.status !== 'open'
+}
+
 export interface StandingsInput {
   seasonId: string
   seasonName: string
   /** Players in the season's roster. */
   playerIds: readonly string[]
-  /** All rounds in the season. Determines how many stakes each player has laid. */
-  rounds: readonly Pick<Round, 'id'>[]
+  /**
+   * All rounds in the season. Only those that have started count towards stake;
+   * see {@link hasRoundStarted}.
+   */
+  rounds: readonly Pick<Round, 'id' | 'status'>[]
   /** Every return record in the season. Multiple per player/round is allowed. */
   returns: readonly Return[]
   /**
@@ -80,12 +100,14 @@ export function calculateStandings(input: StandingsInput): StandingRow[] {
   const aggregated = aggregateReturns(input.returns)
   const skipped = skippedRoundsByPlayer(input.participation ?? [])
   const roundIds = input.rounds.map((r) => r.id)
+  // Stake is charged only for rounds that have been played.
+  const startedRoundIds = input.rounds.filter(hasRoundStarted).map((r) => r.id)
 
   const rows: Omit<StandingRow, 'position'>[] = input.playerIds.map((playerId) => {
     const byRound = aggregated.get(playerId) ?? new Map<string, number>()
     const playerSkipped = skipped.get(playerId) ?? new Set<string>()
 
-    const roundsPlayed = roundIds.filter((id) => !playerSkipped.has(id)).length
+    const roundsPlayed = startedRoundIds.filter((id) => !playerSkipped.has(id)).length
 
     // Only count returns against rounds that exist in this season.
     const amounts: number[] = []
@@ -157,6 +179,7 @@ export function calculateSeasonSummary(input: StandingsInput): SeasonSummary {
     seasonId: input.seasonId,
     seasonName: input.seasonName,
     roundCount: input.rounds.length,
+    playedRoundCount: input.rounds.filter(hasRoundStarted).length,
     totalReturnPence: sumPence(standings.map((r) => r.totalReturnPence)),
     totalStakePence: sumPence(standings.map((r) => r.totalStakePence)),
     profitPence: sumPence(standings.map((r) => r.profitPence)),

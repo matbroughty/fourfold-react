@@ -10,8 +10,16 @@ import type { Participation, Return, Round } from './types'
 
 const ROSTER = ['dan', 'mat', 'paul-s', 'paul-v', 'frank', 'jase', 'ash']
 
-function rounds(count: number, seasonId = '2026-27'): Pick<Round, 'id'>[] {
-  return Array.from({ length: count }, (_, i) => ({ id: `${seasonId}:${i + 1}` }))
+/** Rounds that have been played, which is the normal case in these tests. */
+function rounds(
+  count: number,
+  seasonId = '2026-27',
+  status: Round['status'] = 'complete',
+): Pick<Round, 'id' | 'status'>[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${seasonId}:${i + 1}`,
+    status,
+  }))
 }
 
 let sequence = 0
@@ -156,6 +164,52 @@ describe('calculateStandings', () => {
     expect(byId.get('ash')).toBe(3)
   })
 
+  it('charges nothing for rounds Super 6 has announced but nobody has played', () => {
+    // The real situation on 8 August 2026: the 2026/27 season is imported, round
+    // 1 is open for entries on 22 August and rounds 2 and 3 are still future.
+    // Nobody has staked a penny yet.
+    const standings = calculateStandings(
+      base({
+        rounds: [
+          { id: '2026-27:1', status: 'open' },
+          { id: '2026-27:2', status: 'future' },
+          { id: '2026-27:3', status: 'future' },
+        ],
+      }),
+    )
+
+    for (const row of standings) {
+      expect(row.roundsPlayed).toBe(0)
+      expect(row.totalStakePence).toBe(0)
+      expect(row.profitPence).toBe(0)
+      // ROI is undefined rather than -100% before anyone has played.
+      expect(row.roi).toBeNull()
+    }
+  })
+
+  it('starts charging once a round is under way', () => {
+    const standings = calculateStandings(
+      base({
+        rounds: [
+          { id: '2026-27:1', status: 'inplay' },
+          { id: '2026-27:2', status: 'future' },
+        ],
+      }),
+    )
+
+    expect(standings[0].roundsPlayed).toBe(1)
+    expect(standings[0].totalStakePence).toBe(500)
+  })
+
+  it('counts an unexpected status rather than wiping the stake', () => {
+    // If Sky invents a status we do not recognise, over-counting one round is a
+    // much smaller error than showing everyone a zero stake.
+    const standings = calculateStandings(
+      base({ rounds: [{ id: '2026-27:1', status: 'unknown' }] }),
+    )
+    expect(standings[0].totalStakePence).toBe(500)
+  })
+
   it('reduces the stake for a player who sat a round out', () => {
     const participation: Participation[] = [
       {
@@ -248,6 +302,7 @@ describe('calculateSeasonSummary', () => {
     )
 
     expect(summary.roundCount).toBe(2)
+    expect(summary.playedRoundCount).toBe(2)
     expect(summary.totalReturnPence).toBe(3500)
     // 7 players x 2 rounds x £5.
     expect(summary.totalStakePence).toBe(7000)
@@ -256,10 +311,28 @@ describe('calculateSeasonSummary', () => {
     expect(summary.winningEntries).toBe(3)
   })
 
+  it('distinguishes announced rounds from played ones', () => {
+    const summary = calculateSeasonSummary(
+      base({
+        rounds: [
+          { id: '2026-27:1', status: 'complete' },
+          { id: '2026-27:2', status: 'open' },
+          { id: '2026-27:3', status: 'future' },
+        ],
+      }),
+    )
+
+    expect(summary.roundCount).toBe(3)
+    expect(summary.playedRoundCount).toBe(1)
+    // 7 players x 1 played round x £5.
+    expect(summary.totalStakePence).toBe(3500)
+  })
+
   it('reports zeroes for a season with no rounds yet', () => {
     const summary = calculateSeasonSummary(base({ rounds: [] }))
 
     expect(summary.roundCount).toBe(0)
+    expect(summary.playedRoundCount).toBe(0)
     expect(summary.totalReturnPence).toBe(0)
     expect(summary.totalStakePence).toBe(0)
     expect(summary.winningEntries).toBe(0)
