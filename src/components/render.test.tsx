@@ -191,6 +191,20 @@ describe('RoundCard', () => {
     expect(html).toContain('Void')
   })
 
+  it('marks the current round with a badge and highlights the card', () => {
+    const html = renderToString(<RoundCard round={round()} badge="Current round" />)
+
+    expect(html).toContain('Current round')
+    expect(html).toContain('card-current')
+  })
+
+  it('renders no badge when none is given', () => {
+    const html = renderToString(<RoundCard round={round()} />)
+
+    expect(html).not.toContain('badge-current')
+    expect(html).not.toContain('card-current')
+  })
+
   it('shows a live indicator for a match in progress', () => {
     const html = renderToString(
       <RoundCard

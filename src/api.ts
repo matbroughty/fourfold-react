@@ -5,6 +5,7 @@
  * choice: this is a private hobby site, the token expires in 12 hours, and it
  * grants nothing beyond editing football winnings.
  */
+import type { CurrentRoundKind } from '../shared/domain/rounds'
 import type {
   Return,
   Round,
@@ -53,8 +54,24 @@ export interface SeasonView {
   season: Season
   summary: SeasonSummary
   standings: StandingRow[]
+  /** The round the competition is on — not necessarily the highest-numbered. */
+  currentRoundId: string | null
+  currentRoundKind: CurrentRoundKind | null
   /** Newest round first. */
   rounds: RoundView[]
+}
+
+export interface SeasonWinner {
+  playerId: string
+  playerName: string
+  totalReturnPence: number
+}
+
+/** A season in the list, with its result. */
+export interface SeasonListEntry extends Season {
+  summary: SeasonSummary | null
+  /** Null when the season has produced no returns yet. */
+  winner: SeasonWinner | null
 }
 
 export interface CurrentView extends SeasonView {
@@ -63,7 +80,7 @@ export interface CurrentView extends SeasonView {
 }
 
 export interface SeasonListView {
-  seasons: Season[]
+  seasons: SeasonListEntry[]
   currentSeasonId: string | null
 }
 

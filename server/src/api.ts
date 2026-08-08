@@ -17,7 +17,8 @@ import {
   calculateStandings,
   returnsForRound,
 } from '../../shared/domain/standings'
-import type { Return, Round, Season } from '../../shared/domain/types'
+import { pickCurrentRound } from '../../shared/domain/rounds'
+import type { Return, Round, Season, StandingRow } from '../../shared/domain/types'
 import { Super6Client } from '../../shared/super6/client'
 import type { AppConfig } from './config'
 import {
@@ -163,12 +164,38 @@ async function seasonView(repo: FourFoldRepository, seasonId: string) {
       .sort((a, b) => a.playerId.localeCompare(b.playerId)),
   }))
 
+  // Which round the competition is actually on. Not simply the highest-numbered
+  // one: Super 6 announces future rounds weeks ahead.
+  const current = pickCurrentRound(bundle.rounds)
+
   return {
     season: bundle.season,
     summary: calculateSeasonSummary(input),
     standings: calculateStandings(input),
+    currentRoundId: current?.round.id ?? null,
+    currentRoundKind: current?.kind ?? null,
     // Newest first: the latest round is what people want to see.
     rounds: rounds.reverse(),
+  }
+}
+
+/**
+ * The winner of a completed season, for the seasons list.
+ *
+ * Null while a season has produced no returns at all — everyone is level on
+ * nothing, so naming a "winner" would be meaningless.
+ */
+function seasonWinner(standings: StandingRow[]): {
+  playerId: string
+  playerName: string
+  totalReturnPence: number
+} | null {
+  const top = standings[0]
+  if (!top || top.totalReturnPence <= 0) return null
+  return {
+    playerId: top.playerId,
+    playerName: top.playerName,
+    totalReturnPence: top.totalReturnPence,
   }
 }
 
@@ -224,8 +251,33 @@ async function route(request: ApiRequest, deps: ApiDeps): Promise<ApiResponse> {
 
   if (method === 'GET' && first === 'seasons' && !second) {
     const seasons = await repo.listSeasons()
+
+    // Each season's winner and totals, so the seasons page can show who won
+    // without the browser fetching every season separately. Five seasons of a
+    // few hundred rows each; the whole thing is a handful of queries.
+    const withResults = await Promise.all(
+      seasons.map(async (season) => {
+        const bundle = await repo.getSeasonBundle(season.id)
+        if (!bundle) return { ...season, summary: null, winner: null }
+
+        const input = {
+          seasonId: season.id,
+          seasonName: season.name,
+          playerIds: season.playerIds,
+          rounds: bundle.rounds,
+          returns: bundle.returns,
+          participation: bundle.participation,
+        }
+        return {
+          ...season,
+          summary: calculateSeasonSummary(input),
+          winner: seasonWinner(calculateStandings(input)),
+        }
+      }),
+    )
+
     return ok({
-      seasons,
+      seasons: withResults,
       currentSeasonId: pickCurrentSeason(seasons)?.id ?? null,
     })
   }

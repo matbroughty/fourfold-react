@@ -286,3 +286,41 @@ tbody tr:hover { background: rgba(98, 208, 255, 0.04); }
 @media (min-width: 701px) {
   .mobile-only { display: none !important; }
 }
+
+/* Current-round marker */
+.card-current { border-color: rgba(98, 208, 255, 0.45); }
+.badge-current {
+  margin-left: 10px;
+  color: var(--accent);
+  border-color: rgba(98, 208, 255, 0.4);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+/* "Also announced" list on the home page */
+.upcoming-heading { margin: 0 0 10px; }
+.upcoming-list { list-style: none; margin: 0; padding: 0; }
+.upcoming-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+.upcoming-list li:last-child { border-bottom: none; }
+
+/* Season list, with each season's winner */
+.season-row-main { display: flex; flex-direction: column; gap: 3px; }
+.season-row-winner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+}
+.season-winner-name { font-weight: 500; }
+
+@media (max-width: 700px) {
+  .season-list li { align-items: flex-start; }
+  .season-row-winner { font-size: 14px; }
+}

@@ -2,6 +2,7 @@
  * Round history for one season. Defaults to the current season.
  */
 import { useParams } from 'react-router-dom'
+import { currentRoundBadge } from '../../shared/domain/rounds'
 import RoundCard from '../components/RoundCard'
 import { useApi } from '../useApi'
 import { api } from '../api'
@@ -40,7 +41,15 @@ export default function Rounds() {
       ) : (
         <div className="grid">
           {data.rounds.map((round) => (
-            <RoundCard key={round.id} round={round} />
+            <RoundCard
+              key={round.id}
+              round={round}
+              badge={
+                round.id === data.currentRoundId && data.currentRoundKind
+                  ? currentRoundBadge(data.currentRoundKind)
+                  : null
+              }
+            />
           ))}
         </div>
       )}

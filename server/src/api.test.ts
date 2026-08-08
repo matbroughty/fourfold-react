@@ -138,6 +138,90 @@ describe('public routes', () => {
     expect(body.rounds[0].fixtures).toHaveLength(1)
   })
 
+  it('identifies the round in play, not the highest-numbered one', async () => {
+    // Round 1 open, rounds 2 and 3 announced for later — the real shape of a
+    // season that has not started. Leading with round 3 was the original bug.
+    await repo.putRound(round('2026-27', 1, { status: 'open' }))
+    await repo.putRound(round('2026-27', 2, { status: 'future' }))
+    await repo.putRound(round('2026-27', 3, { status: 'future' }))
+
+    const response = await handleRequest(request({ path: '/api/current' }), deps)
+    const body = response.body as { currentRoundId: string; currentRoundKind: string }
+
+    expect(body.currentRoundId).toBe('2026-27:1')
+    expect(body.currentRoundKind).toBe('open')
+  })
+
+  it('points at the most recent result once rounds are done', async () => {
+    const response = await handleRequest(request({ path: '/api/seasons/2026-27' }), deps)
+    const body = response.body as { currentRoundId: string; currentRoundKind: string }
+
+    // Both seeded rounds are complete.
+    expect(body.currentRoundId).toBe('2026-27:2')
+    expect(body.currentRoundKind).toBe('latest-result')
+  })
+
+  it('lists each season with its winner and totals', async () => {
+    await handleRequest(
+      authed({
+        method: 'POST',
+        path: '/api/admin/returns',
+        body: { seasonId: '2026-27', roundId: '2026-27:1', playerId: 'jase', amount: '42.50' },
+      }),
+      deps,
+    )
+
+    const response = await handleRequest(request({ path: '/api/seasons' }), deps)
+    const [current] = (
+      response.body as {
+        seasons: {
+          id: string
+          winner: { playerName: string; totalReturnPence: number } | null
+          summary: { playedRoundCount: number; totalReturnPence: number } | null
+        }[]
+      }
+    ).seasons
+
+    expect(current.id).toBe('2026-27')
+    expect(current.winner).toEqual({
+      playerId: 'jase',
+      playerName: 'Jase',
+      totalReturnPence: 4250,
+    })
+    expect(current.summary?.playedRoundCount).toBe(2)
+    expect(current.summary?.totalReturnPence).toBe(4250)
+  })
+
+  it('reports no winner for a season where nobody has returned anything', async () => {
+    const response = await handleRequest(request({ path: '/api/seasons' }), deps)
+    const [current] = (response.body as { seasons: { winner: unknown }[] }).seasons
+
+    // Everyone level on nothing; naming a winner would be meaningless.
+    expect(current.winner).toBeNull()
+  })
+
+  it('names the winner of each historical season', async () => {
+    await repo.putSeason(
+      season({ id: '2024-25', name: '2024/25', status: 'complete', imported: true }),
+    )
+    await repo.putRound(round('2024-25', 1, { source: 'csv-import', fixtures: [] }))
+    await handleRequest(
+      authed({
+        method: 'POST',
+        path: '/api/admin/returns',
+        body: { seasonId: '2024-25', roundId: '2024-25:1', playerId: 'paul-v', amount: '267.91' },
+      }),
+      deps,
+    )
+
+    const response = await handleRequest(request({ path: '/api/seasons' }), deps)
+    const seasons = (
+      response.body as { seasons: { id: string; winner: { playerName: string } | null }[] }
+    ).seasons
+
+    expect(seasons.find((s) => s.id === '2024-25')?.winner?.playerName).toBe('Paul V')
+  })
+
   it('404s an unknown season', async () => {
     const response = await handleRequest(request({ path: '/api/seasons/1999-00' }), deps)
     expect(response.status).toBe(404)

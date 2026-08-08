@@ -70,15 +70,25 @@ function FixtureRow({ fixture }: { fixture: Fixture }) {
   )
 }
 
-export default function RoundCard({ round }: { round: RoundView }) {
+export default function RoundCard({
+  round,
+  /** Optional marker, e.g. "Current round", shown next to the round name. */
+  badge = null,
+}: {
+  round: RoundView
+  badge?: string | null
+}) {
   const date = formatRoundDate(round)
   const statusLabel = ROUND_STATUS_LABEL[round.status] ?? ''
 
   return (
-    <div className="card">
+    <div className={`card${badge ? ' card-current' : ''}`}>
       <div className="round-header">
         <div>
-          <h2>{round.name}</h2>
+          <h2>
+            {round.name}
+            {badge && <span className="badge badge-current">{badge}</span>}
+          </h2>
           <div className="subtle">
             {date}
             {statusLabel && ` · ${statusLabel}`}

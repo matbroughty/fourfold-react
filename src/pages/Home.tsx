@@ -3,6 +3,7 @@
  */
 import { Link } from 'react-router-dom'
 import { formatPenceWithSeparators } from '../../shared/domain/money'
+import { currentRoundBadge, currentRoundHeading } from '../../shared/domain/rounds'
 import RoundCard from '../components/RoundCard'
 import StandingsTable from '../components/StandingsTable'
 import { useApi } from '../useApi'
@@ -76,7 +77,15 @@ export default function Home() {
     )
   }
 
-  const latest = data.rounds[0]
+  // The round the competition is on, which is usually NOT the highest-numbered:
+  // Super 6 announces the next few rounds weeks ahead.
+  const current = data.rounds.find((r) => r.id === data.currentRoundId) ?? data.rounds[0]
+  const kind = data.currentRoundKind
+  // Ascending: upcoming rounds read naturally in the order they will be played,
+  // unlike the main list which is newest-first.
+  const upcoming = data.rounds
+    .filter((r) => r.id !== current?.id && r.status === 'future')
+    .sort((a, b) => a.roundNumber - b.roundNumber)
 
   return (
     <>
@@ -99,13 +108,34 @@ export default function Home() {
         <StandingsTable standings={data.standings} />
       </div>
 
-      {latest ? (
+      {current ? (
         <>
           <div className="section-heading">
-            <h2>Latest round</h2>
+            <h2>{kind ? currentRoundHeading(kind) : 'Latest round'}</h2>
             {data.rounds.length > 1 && <Link to="/rounds">All {data.season.name} rounds →</Link>}
           </div>
-          <RoundCard round={latest} />
+          <RoundCard round={current} badge={kind ? currentRoundBadge(kind) : null} />
+
+          {upcoming.length > 0 && (
+            <div className="card">
+              <h3 className="upcoming-heading">Also announced</h3>
+              <ul className="upcoming-list">
+                {upcoming.map((round) => (
+                  <li key={round.id}>
+                    <span>{round.name}</span>
+                    <span className="subtle">
+                      {round.fixtures[0]?.kickOffAt
+                        ? new Date(round.fixtures[0].kickOffAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'long',
+                          })
+                        : 'date to be confirmed'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       ) : (
         <div className="card">

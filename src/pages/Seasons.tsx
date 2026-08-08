@@ -31,11 +31,31 @@ function SeasonList() {
         <ul className="season-list">
           {seasons.map((season) => (
             <li key={season.id}>
-              <Link to={`/seasons/${season.id}`}>{season.name}</Link>
-              <span className="subtle">
-                {season.status === 'active' ? 'In progress' : 'Complete'}
-                {season.imported && ' · winnings only'}
-              </span>
+              <div className="season-row-main">
+                <Link to={`/seasons/${season.id}`}>{season.name}</Link>
+                <span className="subtle">
+                  {season.status === 'active' ? 'In progress' : 'Complete'}
+                  {season.summary && ` · ${season.summary.playedRoundCount} rounds`}
+                  {season.imported && ' · winnings only'}
+                </span>
+              </div>
+              <div className="season-row-winner">
+                {season.winner ? (
+                  <>
+                    <span className="season-winner-name">
+                      {season.status === 'active' ? '🥇 Leading: ' : '🏆 '}
+                      {season.winner.playerName}
+                    </span>
+                    <span className="subtle">
+                      {formatPenceWithSeparators(season.winner.totalReturnPence)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="subtle">
+                    {season.status === 'active' ? 'No returns yet' : 'No winner recorded'}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>
