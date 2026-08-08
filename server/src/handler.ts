@@ -12,7 +12,7 @@ import type {
 } from 'aws-lambda'
 import { Super6Client } from '../../shared/super6/client'
 import { corsHeaders, handleRequest, type ApiRequest } from './api'
-import { loadConfig } from './config'
+import { loadConfig, loadSyncConfig } from './config'
 import { DynamoRepository } from './repo/dynamo'
 import type { FourFoldRepository } from './repo/types'
 import { syncSuper6 } from './sync'
@@ -90,7 +90,9 @@ export async function api(
  * Sky has a wobble. The outcome is recorded in the sync state either way.
  */
 export async function scheduledSync(): Promise<{ ok: boolean; error: string | null }> {
-  const config = await loadConfig()
+  // loadSyncConfig, not loadConfig: this function has no IAM access to the admin
+  // secrets by design, so it must not try to read them.
+  const config = loadSyncConfig()
   const client = new Super6Client(
     config.super6BaseUrl ? { baseUrl: config.super6BaseUrl } : {},
   )

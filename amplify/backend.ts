@@ -5,9 +5,15 @@
  *  - Amplify Gen 2 lets you drop arbitrary CDK into the backend, so the whole
  *    application (frontend hosting + API + database + schedule) deploys from one
  *    repository with one pipeline. No separate CDK or SAM app to remember.
- *  - There is NO API Gateway. A Lambda Function URL gives us an HTTPS endpoint
- *    for free, and API Gateway would only add cost, config and another hop for
- *    what is a handful of requests a week.
+ *  - An API Gateway HTTP API fronts the Lambda. This was originally a public
+ *    Lambda Function URL, which is cheaper and one service fewer — but this AWS
+ *    account refuses anonymous Function URL invocations: with authType NONE and
+ *    a resource policy allowing `Principal: "*"` on the exact function ARN, and
+ *    no Organization SCP in play, every request still returned
+ *    AccessDeniedException. An HTTP API is the standard public entry point and
+ *    costs $1 per million requests, so a few thousand requests a month is
+ *    fractions of a penny. If the account restriction is ever lifted, swapping
+ *    back is a ten-line change.
  *  - There is no Cognito and no `defineAuth`. One administrator with one
  *    password does not need a user pool; see server/src/auth.ts.
  *  - DynamoDB on-demand rather than S3: the site reads individual seasons,
@@ -20,6 +26,8 @@
  */
 import { defineBackend } from '@aws-amplify/backend'
 import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib'
+import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as events from 'aws-cdk-lib/aws-events'
 import * as targets from 'aws-cdk-lib/aws-events-targets'
@@ -158,12 +166,21 @@ apiFunction.addToRolePolicy(
 /**
  * Public HTTPS endpoint.
  *
- * AuthType.NONE means AWS does not authenticate the caller — authorisation is
- * ours to do, and every mutating route checks an admin token (see api.ts).
- * The public read routes are genuinely public: it is a football results site.
+ * No authorizer: authorisation is ours to do, and every mutating route checks an
+ * admin token (see server/src/api.ts). The public read routes are genuinely
+ * public — it is a football results site.
+ *
+ * A `defaultIntegration` with no explicit routes proxies every path and method
+ * to the Lambda, which does its own routing. CORS is deliberately NOT configured
+ * here: the Lambda answers OPTIONS itself and reflects only exact allowed
+ * origins, and setting it in both places would emit duplicate headers.
+ *
+ * The default `$default` stage means paths arrive unprefixed, so `rawPath` is
+ * `/api/health` rather than `/prod/api/health`.
  */
-const functionUrl = apiFunction.addFunctionUrl({
-  authType: lambda.FunctionUrlAuthType.NONE,
+const httpApi = new apigwv2.HttpApi(stack, 'FourFoldHttpApi', {
+  description: 'FourFold public and admin API',
+  defaultIntegration: new HttpLambdaIntegration('FourFoldApiIntegration', apiFunction),
 })
 
 /* ------------------------------------------------------------------ *
@@ -191,8 +208,8 @@ new events.Rule(stack, 'FourFoldSyncSchedule', {
  * ------------------------------------------------------------------ */
 
 new CfnOutput(stack, 'ApiBaseUrl', {
-  value: functionUrl.url,
-  description: 'Set this as VITE_API_BASE_URL in the Amplify app environment',
+  value: httpApi.apiEndpoint,
+  description: 'Base URL of the FourFold API',
 })
 
 new CfnOutput(stack, 'TableName', {
@@ -200,10 +217,11 @@ new CfnOutput(stack, 'TableName', {
   description: 'Pass as FOURFOLD_TABLE_NAME when running the history migration',
 })
 
-// Also published into amplify_outputs.json so local dev can pick it up.
+// Published into amplify_outputs.json during the backend build, which is how the
+// frontend learns the API URL without anyone setting an environment variable.
 backend.addOutput({
   custom: {
-    apiBaseUrl: functionUrl.url,
+    apiBaseUrl: httpApi.apiEndpoint,
     tableName: table.tableName,
   },
 })
