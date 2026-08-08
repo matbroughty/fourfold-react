@@ -51,7 +51,7 @@ Stake is `rounds × £5`. Everyone is assumed to play every round; see
 ```
 Browser ──> Amplify Hosting (React SPA, Vite)
               │
-              └─ fetch ──> Lambda Function URL ──> DynamoDB (single table)
+              └─ fetch ──> API Gateway (HTTP API) ──> Lambda ──> DynamoDB
                                   ▲
             EventBridge (3h) ──> Sync Lambda ──> api.s6.sbgservices.com/v2
 ```
@@ -61,9 +61,15 @@ Amplify Gen 2's `amplify/backend.ts`.
 
 Deliberate choices, and why:
 
-- **No API Gateway.** A Lambda Function URL is an HTTPS endpoint at no extra cost
-  and one less service to configure. At a few hundred requests a week, API
-  Gateway would buy nothing.
+- **API Gateway HTTP API, reluctantly.** The original design used a public Lambda
+  Function URL — cheaper, and one service fewer. **This AWS account refuses
+  anonymous Function URL invocations**: with `authType: NONE` and a resource
+  policy allowing `Principal: "*"` on the exact function ARN, and no
+  Organization SCP in play, every request returned `AccessDeniedException`. An
+  HTTP API is the standard public entry point at $1 per million requests, so a
+  few thousand requests a month costs fractions of a penny. If that account
+  restriction is ever lifted, switching back is a ten-line change in
+  `amplify/backend.ts`.
 - **No Cognito, no `defineAuth`.** One administrator with one password does not
   need a user pool. Authentication is a scrypt hash in SSM plus an HMAC session
   token (`server/src/auth.ts`).
@@ -129,7 +135,7 @@ Nothing secret is committed, and nothing secret reaches the browser.
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_API_BASE_URL` | Base URL of the API. Set in the Amplify app's environment variables to the Function URL. Leave empty locally to use the Vite proxy. |
+| `VITE_API_BASE_URL` | Optional override for the API base URL. Normally unnecessary — the frontend reads `custom.apiBaseUrl` from `amplify_outputs.json`, which the backend build writes before the frontend build runs. Leave unset locally to use the Vite proxy. |
 
 Only `VITE_*` variables are exposed to the browser, and neither of the two
 secrets below is one.
@@ -291,8 +297,9 @@ run overwrites rather than duplicates.
    npx ampx sandbox          # personal sandbox
    npx ampx pipeline-deploy --branch main --app-id <APP_ID>
    ```
-3. **Set `VITE_API_BASE_URL`** in the Amplify app's environment variables to the
-   `ApiBaseUrl` output (the Function URL), then redeploy the frontend.
+3. **Nothing to configure for the API URL.** The backend build writes
+   `custom.apiBaseUrl` into `amplify_outputs.json` and the frontend reads it from
+   there. Set `VITE_API_BASE_URL` only if you need to point the SPA somewhere else.
 4. **Add the SPA rewrite** in Amplify → Rewrites and redirects, so client-side
    routes like `/admin` work on refresh:
 

@@ -3,7 +3,7 @@ import roundDetail from '../../shared/super6/__fixtures__/round-detail.json'
 import { Super6Client } from '../../shared/super6/client'
 import type { RawRoundDetail } from '../../shared/super6/types'
 import { InMemoryRepository } from './repo/memory'
-import { syncSuper6 } from './sync'
+import { stableStringify, syncSuper6 } from './sync'
 
 const NOW = () => '2026-08-08T12:00:00.000Z'
 const SILENT = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -190,6 +190,67 @@ describe('syncSuper6 — idempotency', () => {
     // First-seen time is ours and must not move.
     expect(updated?.importedAt).toBe('2026-08-20T00:00:00.000Z')
     expect(updated?.lastSyncedAt).toBe('2026-08-22T15:00:00.000Z')
+  })
+})
+
+describe('syncSuper6 — idempotency survives a database round-trip', () => {
+  /**
+   * DynamoDB returns an item's attributes in its own order, not the order they
+   * were written, and strips undefined values. A repository that reshuffles keys
+   * on read reproduces that faithfully; the in-memory one alone cannot, because
+   * structuredClone preserves insertion order.
+   *
+   * Without an order-independent fingerprint the deployed sync reported every
+   * round as "updated" on a second identical run and rewrote the whole season
+   * every three hours.
+   */
+  class KeyShufflingRepository extends InMemoryRepository {
+    override async getRound(roundId: string) {
+      const round = await super.getRound(roundId)
+      return round ? (reverseKeys(round) as typeof round) : undefined
+    }
+  }
+
+  function reverseKeys(value: unknown): unknown {
+    if (value === null || typeof value !== 'object') return value
+    if (Array.isArray(value)) return value.map(reverseKeys)
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .reverse()
+        .map(([k, v]) => [k, reverseKeys(v)]),
+    )
+  }
+
+  it('reports rounds as unchanged even when keys come back reordered', async () => {
+    const repo = new KeyShufflingRepository()
+    const { client } = makeClient(fullSeasonRoutes())
+
+    const first = await syncSuper6({ client, repo, now: NOW, logger: SILENT })
+    expect(first.roundsCreated).toBe(3)
+
+    const writesAfterFirst = repo.writeCount
+    const second = await syncSuper6({ client, repo, now: NOW, logger: SILENT })
+
+    expect(second.roundsUpdated).toBe(0)
+    expect(second.roundsSkipped).toBe(3)
+    // Only the sync-state record.
+    expect(repo.writeCount - writesAfterFirst).toBe(1)
+  })
+
+  it('treats an absent optional field as equal to an undefined one', () => {
+    expect(stableStringify({ a: 1, note: undefined })).toBe(stableStringify({ a: 1 }))
+  })
+
+  it('is insensitive to key order at every level', () => {
+    expect(stableStringify({ a: 1, b: { c: 2, d: [1, { e: 3, f: 4 }] } })).toBe(
+      stableStringify({ b: { d: [1, { f: 4, e: 3 }], c: 2 }, a: 1 }),
+    )
+  })
+
+  it('still distinguishes genuinely different content', () => {
+    expect(stableStringify({ a: 1 })).not.toBe(stableStringify({ a: 2 }))
+    // Array order is meaningful — fixtures are ordered.
+    expect(stableStringify([1, 2])).not.toBe(stableStringify([2, 1]))
   })
 })
 

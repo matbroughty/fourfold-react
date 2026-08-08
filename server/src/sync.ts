@@ -48,7 +48,31 @@ export interface SyncResult {
  */
 function contentFingerprint(round: Round): string {
   const { importedAt: _importedAt, lastSyncedAt: _lastSyncedAt, ...content } = round
-  return JSON.stringify(content)
+  return stableStringify(content)
+}
+
+/**
+ * Serialise with keys in a fixed order, ignoring `undefined`.
+ *
+ * `JSON.stringify` preserves insertion order, and DynamoDB returns an item's
+ * attributes in its own order — so comparing a freshly-normalised round with one
+ * read back from the database made every field look changed even when nothing
+ * had. The deployed sync reported "3 updated" on a second identical run instead
+ * of "3 unchanged", rewriting the whole season every three hours.
+ *
+ * `undefined` is skipped because the DocumentClient is configured with
+ * `removeUndefinedValues`, so an undefined field and an absent one are the same
+ * thing once stored and must compare equal.
+ */
+export function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null'
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(',')}}`
 }
 
 function seasonNameFromId(seasonId: string): string {

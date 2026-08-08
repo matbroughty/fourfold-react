@@ -11,13 +11,17 @@
  */
 import { GetParametersCommand, SSMClient } from '@aws-sdk/client-ssm'
 
-export interface AppConfig {
+/** Configuration the scheduled sync needs. Deliberately contains no secrets. */
+export interface SyncConfig {
   tableName: string
+  super6BaseUrl: string | undefined
+}
+
+export interface AppConfig extends SyncConfig {
   adminPasswordHash: string
   tokenSecret: string
   /** Exact origins allowed to call the API. Empty means same-origin only. */
   allowedOrigins: string[]
-  super6BaseUrl: string | undefined
 }
 
 let cached: AppConfig | undefined
@@ -36,11 +40,26 @@ function splitOrigins(value: string | undefined): string[] {
     .filter(Boolean)
 }
 
+/**
+ * Configuration for the sync Lambda.
+ *
+ * Reads environment variables only — no SSM call, and therefore no need for the
+ * sync function's IAM role to have any access to the admin password hash or the
+ * token signing secret. It never authenticates anyone, so it must not be able to
+ * read either. Calling the full `loadConfig()` here would fail with AccessDenied,
+ * which is exactly what the deployed function did before this split existed.
+ */
+export function loadSyncConfig(): SyncConfig {
+  const tableName = process.env.FOURFOLD_TABLE_NAME
+  if (!tableName) throw new Error('FOURFOLD_TABLE_NAME is not set')
+
+  return { tableName, super6BaseUrl: process.env.SUPER6_BASE_URL }
+}
+
 export async function loadConfig(): Promise<AppConfig> {
   if (cached) return cached
 
-  const tableName = process.env.FOURFOLD_TABLE_NAME
-  if (!tableName) throw new Error('FOURFOLD_TABLE_NAME is not set')
+  const { tableName, super6BaseUrl } = loadSyncConfig()
 
   let adminPasswordHash = process.env.FOURFOLD_ADMIN_PASSWORD_HASH
   let tokenSecret = process.env.FOURFOLD_TOKEN_SECRET
@@ -75,10 +94,10 @@ export async function loadConfig(): Promise<AppConfig> {
 
   cached = {
     tableName,
+    super6BaseUrl,
     adminPasswordHash: adminPasswordHash ?? '',
     tokenSecret: tokenSecret ?? '',
     allowedOrigins: splitOrigins(process.env.FOURFOLD_ALLOWED_ORIGINS),
-    super6BaseUrl: process.env.SUPER6_BASE_URL,
   }
   return cached
 }
