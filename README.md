@@ -6,8 +6,12 @@ matches Sky Super 6 picks each round.
 Rounds and fixtures import themselves from Super 6. When somebody wins, an
 administrator types one number into `/admin` and the site works out the rest.
 
-- Production: <https://fourfold.co.uk>
-- Staging: <https://new.fourfold.co.uk>
+- Production: <https://fourfold.co.uk> — still the **old** static site
+- Staging: <https://new.fourfold.co.uk> — this application
+
+Picking this up fresh? Start with **[CLAUDE.md](CLAUDE.md)** for the live
+environment, the working conventions and the traps already hit. This README
+explains how the system works.
 
 ## The game
 
